@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LP Tracker — Groupe SEB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #F4F5F7;
+    --surface:   #FFFFFF;
+    --border:    #E2E4E9;
+    --text:      #1A1D23;
+    --muted:     #6B7280;
+    --accent:    #D32F2F;
+    --accent-lt: #FFEBEE;
+    --blue:      #1565C0;
+    --blue-lt:   #E3F0FF;
+    --green:     #2E7D32;
+    --green-lt:  #E8F5E9;
+    --orange:    #E65100;
+    --orange-lt: #FFF3E0;
+    --step-done: #2E7D32;
+    --radius:    10px;
+    --shadow:    0 1px 4px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: var(--text);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 52px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-brand { display: flex; align-items: center; gap: 10px; }
+  .topbar-brand .logo-box {
+    background: var(--accent);
+    color: #fff;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 7px;
+    border-radius: 4px;
+    letter-spacing: .05em;
+  }
+  .topbar-brand span { font-size: 14px; font-weight: 600; opacity: .9; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .offline-badge {
+    background: var(--orange);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 20px;
+    display: none;
+  }
+  .offline-badge.visible { display: block; }
+  .user-chip {
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,.1);
+    border-radius: 20px;
+    padding: 4px 10px 4px 4px;
+    font-size: 13px;
+  }
+  .user-avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: #fff;
+  }
+
+  /* ── LAYOUT ── */
+  .main { max-width: 680px; margin: 0 auto; padding: 24px 16px 80px; }
+
+  /* ── OPERATION HEADER ── */
+  .op-header {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--shadow);
+  }
+  .op-tag {
+    background: var(--accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .op-name { font-size: 17px; font-weight: 600; margin-top: 4px; }
+  .op-sub  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .op-wave {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    text-align: right;
+    color: var(--muted);
+  }
+  .op-wave strong { display: block; font-size: 20px; color: var(--text); }
+
+  /* ── PROGRESS BAR ── */
+  .progress-wrap { margin-bottom: 20px; }
+  .progress-label {
+    display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--muted); margin-bottom: 6px;
+  }
+  .progress-track {
+    height: 4px; background: var(--border); border-radius: 4px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: var(--blue);
+    border-radius: 4px;
+    transition: width .4s ease;
+  }
+
+  /* ── CARDS / STEPS ── */
+  .step-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: opacity .2s;
+  }
+  .step-card.locked { opacity: .45; pointer-events: none; }
+  .step-card.done { border-left: 3px solid var(--step-done); }
+
+  .step-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; font-weight: 500; color: var(--muted);
+    flex-shrink: 0;
+    transition: all .2s;
+  }
+  .step-card.active .step-num { border-color: var(--blue); color: var(--blue); }
+  .step-card.done   .step-num { border-color: var(--step-done); background: var(--step-done); color: #fff; }
+  .step-card.done   .step-num::after { content: '✓'; font-size: 13px; }
+  .step-card.done   .step-num span { display: none; }
+
+  .step-title-wrap { flex: 1; }
+  .step-title  { font-size: 14px; font-weight: 600; }
+  .step-summary{ font-size: 12px; color: var(--muted); margin-top: 1px; display: none; }
+  .step-card.done .step-summary { display: block; }
+
+  .step-chevron {
+    font-size: 12px; color: var(--muted);
+    transition: transform .2s;
+  }
+  .step-card.active .step-chevron { transform: rotate(180deg); }
+
+  .step-body {
+    padding: 0 18px 18px;
+    display: none;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+  .step-card.active .step-body { display: block; }
+
+  /* ── FORM ELEMENTS ── */
+  label.field-label {
+    display: block;
+    font-size: 12px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .05em;
+    margin-bottom: 6px; margin-top: 14px;
+  }
+  label.field-label:first-child { margin-top: 0; }
+
+  .help-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--border); color: var(--muted);
+    font-size: 10px; font-weight: 700; cursor: pointer;
+    margin-left: 5px; vertical-align: middle;
+    border: none;
+    transition: background .15s;
+  }
+  .help-btn:hover { background: var(--blue); color: #fff; }
+
+  .help-bubble {
+    background: var(--blue-lt);
+    border: 1px solid #BADAFF;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--blue);
+    margin-bottom: 10px;
+    display: none;
+  }
+  .help-bubble.visible { display: block; }
+
+  input[type=text], input[type=email], input[type=date], input[type=number], select, textarea {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    padding: 10px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--surface);
+    outline: none;
+    transition: border-color .15s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--blue); }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+    cursor: pointer;
+  }
+
+  textarea { resize: vertical; min-height: 80px; }
+
+  /* ── INFO BOX MAGASIN ── */
+  .mag-info {
+    background: var(--blue-lt);
+    border: 1px solid #BADAFF;
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: none;
+    margin-top: 12px;
+  }
+  .mag-info.visible { display: block; }
+  .mag-info-title { font-size: 11px; font-weight: 600; color: var(--blue); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+  .mag-kpis { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .mag-kpi { text-align: center; }
+  .mag-kpi-val { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; color: var(--text); }
+  .mag-kpi-val.neg { color: var(--accent); }
+  .mag-kpi-val.pos { color: var(--green); }
+  .mag-kpi-label { font-size: 10px; color: var(--muted); margin-top: 2px; text-transform: uppercase; }
+
+  /* ── CHOICE BUTTONS ── */
+  .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .choice-grid.col1 { grid-template-columns: 1fr; }
+  .choice-grid.col3 { grid-template-columns: 1fr 1fr 1fr; }
+  .choice-btn {
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    border-radius: 7px;
+    padding: 10px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    transition: all .15s;
+    text-align: center;
+  }
+  .choice-btn:hover { border-color: var(--blue); color: var(--blue); }
+  .choice-btn.selected { border-color: var(--blue); background: var(--blue-lt); color: var(--blue); }
+  .choice-btn.selected-no { border-color: var(--accent); background: var(--accent-lt); color: var(--accent); }
+
+  /* ── NUMBER STEPPER ── */
+  .stepper { display: flex; align-items: center; gap: 0; }
+  .stepper button {
+    width: 40px; height: 42px;
+    border: 1.5px solid var(--border);
+    background: var(--bg); color: var(--text);
+    font-size: 18px; font-weight: 400;
+    cursor: pointer; transition: all .15s;
+    flex-shrink: 0;
+  }
+  .stepper button:first-child { border-radius: 7px 0 0 7px; }
+  .stepper button:last-child  { border-radius: 0 7px 7px 0; }
+  .stepper button:hover { background: var(--blue-lt); border-color: var(--blue); color: var(--blue); }
+  .stepper input {
+    width: 70px; border-radius: 0 !important;
+    border-left: none !important; border-right: none !important;
+    text-align: center; font-weight: 600;
+  }
+
+  /* ── RUPTURE LIST ── */
+  .rupture-section { margin-top: 12px; display: none; }
+  .rupture-section.visible { display: block; }
+  .rupture-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--border); border-radius: 6px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: all .15s;
+    font-size: 13px;
+  }
+  .rupture-item:hover { border-color: var(--accent); }
+  .rupture-item.checked { border-color: var(--accent); background: var(--accent-lt); }
+  .rupture-check {
+    width: 18px; height: 18px; border-radius: 4px;
+    border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 11px; color: #fff;
+    transition: all .15s;
+  }
+  .rupture-item.checked .rupture-check { background: var(--accent); border-color: var(--accent); }
+  .rupture-ref { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+
+  /* ── PHOTO ZONE ── */
+  .photo-zone {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .photo-zone:hover { border-color: var(--blue); background: var(--blue-lt); }
+  .photo-zone.has-photo { border-style: solid; border-color: var(--green); background: var(--green-lt); }
+  .photo-zone-icon { font-size: 28px; margin-bottom: 6px; }
+  .photo-zone-text { font-size: 13px; color: var(--muted); }
+  .photo-zone.has-photo .photo-zone-text { color: var(--green); font-weight: 600; }
+  .photo-preview {
+    width: 100%; height: 140px; object-fit: cover;
+    border-radius: 6px; margin-top: 10px; display: none;
+  }
+  .photo-preview.visible { display: block; }
+  input[type=file] { display: none; }
+
+  /* ── NAV BUTTONS ── */
+  .step-nav { display: flex; justify-content: flex-end; margin-top: 18px; gap: 8px; }
+  .btn {
+    padding: 10px 20px;
+    border-radius: 7px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer; border: none;
+    transition: all .15s;
+  }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-primary:hover { background: #0D47A1; }
+  .btn-secondary { background: var(--bg); color: var(--text); border: 1.5px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--blue); color: var(--blue); }
+  .btn-danger { background: var(--accent); color: #fff; }
+  .btn-danger:hover { background: #B71C1C; }
+
+  /* ── SUBMIT SCREEN ── */
+  #screen-submit { display: none; }
+  #screen-submit.visible { display: block; }
+  #screen-form.hidden { display: none; }
+
+  .submit-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px 24px;
+    box-shadow: var(--shadow);
+    text-align: center;
+  }
+  .submit-icon { font-size: 52px; margin-bottom: 16px; }
+  .submit-title { font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+  .submit-sub { font-size: 14px; color: var(--muted); margin-bottom: 24px; line-height: 1.5; }
+  .submit-summary {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: left;
+    margin-bottom: 24px;
+  }
+  .submit-summary-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .submit-summary-row:last-child { border-bottom: none; }
+  .submit-summary-row span:first-child { color: var(--muted); }
+  .submit-summary-row span:last-child { font-weight: 600; }
+  .submit-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+  /* ── SUCCESS SCREEN ── */
+  #screen-success { display: none; }
+  #screen-success.visible { display: block; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: #fff;
+    padding: 12px 20px; border-radius: 8px;
+    font-size: 13px; font-weight: 500;
+    box-shadow: 0 4px 20px rgba(0,0,0,.2);
+    opacity: 0; transition: opacity .3s; pointer-events: none;
+    z-index: 999; white-space: nowrap;
+  }
+  .toast.visible { opacity: 1; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 480px) {
+    .mag-kpis { grid-template-columns: 1fr 1fr; }
+    .choice-grid { grid-template-columns: 1fr; }
+    .op-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .op-wave { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="logo-box">SEB</div>
+    <span>LP Tracker</span>
+  </div>
+  <div class="topbar-right">
+    <div class="offline-badge" id="offlineBadge">● HORS LIGNE</div>
+    <div class="user-chip">
+      <div class="user-avatar">ML</div>
+      M. Lefebvre
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- OPERATION HEADER -->
+  <div class="op-header">
+    <div>
+      <div class="op-tag">LP Actif</div>
+      <div class="op-name">Intermarché — Semaine 15</div>
+      <div class="op-sub">Campagne printemps 2026 · Cuisine &amp; Préparation</div>
+    </div>
+    <div class="op-wave">
+      <strong>Vague 8</strong>
+      Jour 5 / 7
+    </div>
+  </div>
+
+  <!-- SCREENS -->
+  <div id="screen-form">
+
+    <!-- PROGRESS -->
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span id="progressText">Étape 1 sur 9</span>
+        <span id="progressPct">11%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill" style="width:11%"></div>
+      </div>
+    </div>
+
+    <!-- ── ÉTAPE 1 — DATE ── -->
+    <div class="step-card active" id="step1">
+      <div class="step-head" onclick="toggleStep('step1')">
+        <div class="step-num"><span>1</span></div>
+        <div class="step-title-wrap">
+          <div class="step-title">Date de visite</div>
+          <div class="step-summary" id="sum1"></div>
+        </div>
+        <div class="step-chevron">▼</div>
+      </div>
+      <div class="step-body">
+        <label class="field-label">Date</label>
+        <input type="date" id="f-date">
+        <div class="step-nav">
+          <button class="btn btn-primary" onclick="nextStep('step1','step2','sum1',getSummaryDate)">Suivant →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ÉTAPE 2 — MAGASIN ── -->
+    <div class="step-card locked" id="step2">
+      <div class="step-head" onclick="toggleStep('step2')">
+        <div class="step-num"><span>2</span></div>
+        <div class="step-title-wrap">
+          <div class="step-title">Choix du magasin</div>
+          <div class="step-summary" id="sum2"></div>
+        </div>
+        <div class="step-chevron">▼</div>
+      </div>
+      <div class="step-body">
+        <label class="field-label">Votre portefeuille</label>
+        <select id="f-mag" onchange="onMagasinChange()">
+          <option value="">— Sélectionner un magasin —</option>
+          <option value="ITM-Lyon1"  data-meubles="4"  data-perf="-17" data-ca="117 793">ITM Lyon Part-Dieu</option>
+          <option value="ITM-Lyon2"  data-meubles="2"  data-perf="+4"  data-ca="62 440">ITM Lyon Vaise</option>
+          <option value="ITM-Bourg"  data-meubles="3"  data-perf="-9"  data-ca="44 210">ITM Bourg-en-Bresse</option>
+          <option value="ITM-Macon"  data-meubles="2"  data-perf="+12" data-ca="38 890">ITM Mâcon Centre</option>
+          <option value="ITM-Amb"    data-meubles="1"  data-perf="-31" data-ca="19 070">ITM Ambérieu-en-Bugey</option>
+          <option value="ITM-Villefranche" data-meubles="3" data-perf="-5" data-ca="55 320">ITM Villefranche-sur-Saône</option>
+        </select>
+
+        <div class="mag-info" id="magInfo">
+          <div class="mag-info-title">📦 Données magasin</div>
+          <div class="mag-kpis">
+            <div class="mag-kpi">
+              <div class="mag-kpi-val" id="mag-meubles">—</div>
+              <div class="mag-kpi-label">Meubles LP livrés</div>
+            </div>
+            <div class="mag-kpi">
+              <div class="mag-kpi-val" id="mag-ca">—</div>
+              <div class="mag-kpi-label">CA sem. en cours</div>
+            </div>
+            <div class="mag-kpi">
+              <div class="mag-kpi-val" id="mag-perf">—</div>
+              <div class="mag-kpi-label">vs Semaine –1</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-nav">
+          <button class="btn btn-secondary" onclick="prevStep('step2','step1')">← Retour</button>
+          <button class="btn btn-primary" onclick="nextStep('step2','step3','sum2',getSummaryMag)">Suivant →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ÉTAPE 3 — INTERLOCUTEUR ── -->
+    <div class="step-card locked" id="step3">
+      <div class="step-head" onclick="toggleStep('step3')">
+        <div class="step-num"><span>3</span></div>
+        <div class="step-title-wrap">
+          <div class="step-title">Interlocuteur magasin</div>
+          <div class="step-summary" id="sum3"></div>
+        </div>
+        <div class="step-chevron">▼</div>
+      </div>
+      <div class="step-body">
+        <div style="background:var(--blue-lt);border:1px solid #BADAFF;border-radius:6px;padding:8px 12px;font-size:12px;color:var(--blue);margin-bottom:14px;">
+          ℹ️ Pré-rempli depuis votre dernière visite. Modifiez si l'interlocuteur a changé.
+        </div>
+        <label class="field-label">Prénom</label>
+        <input type="text" id="f-prenom" value="Sébastien">
+        <label class="field-label">Nom</label>
+        <input type="text" id="f-nom" value="Bouchard">
+        <label class="field-label">Email</label>
+        <input type="email" id="f-email" value="s.bouchard@intermarche-lyon1.fr">
+        <div class="step-nav">
+          <button class="btn btn-secondary" onclick="prevStep('step3','step2')">← Retour</button>
+          <button class="btn btn-primary" onclick="nextStep('step3','step4','sum3',getSummaryContact)">Suivant →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ÉTAPE 4 — POSITION LP ── -->
+    <div class="step-card locked" id="step4">
+      <div class="step-head" onclick="toggleStep('step4')">
+        <div class="step-num"><span>4</span></div>
+        <div class="step-title-wrap">
+          <div class="step-title">Position du LP dans le magasin</div>
+          <div class="step-summary" id="sum4"></div>
+        </div>
+        <div class="step-chevron">▼</div>
+      </div>
+      <div class="step-body">
+        <label class="field-label">
+          Emplacement
+          <button class="help-btn" onclick="toggleHelp('help4')">?</button>
+        </label>
+        <div class="help-bubble" id="help4">Si 2 meubles présents, indiquez le meilleur emplacement. L'emplacement idéal est l'entrée magasin ou l'allée centrale.</div>
+        <div class="choice-grid" id="pos-grid">
+          <button class="choice-btn" onclick="selectChoice(this,'pos-grid','f-pos')">🚪 Entrée magasin</button>
+          <button class="choice-btn" onclick="selectChoice(this,'pos-grid','f-pos')">🛒 Allée centrale</button>
+          <button class="choice-btn" onclick="selectChoice(this,'pos-grid','f-pos')">🌿 Allée saisonnière</button>
+          <button class="choice-btn" onclick="selectChoice(this,'pos-grid','f-pos')">📦 TG / Rayon</button>
+        </div>
+        <input type="hidden" id="f-pos">
+        <div class="step-nav">
+          <button class="btn btn-secondary" onclick="prevStep('step4','step3')">← Retour</button>
+          <button class="btn btn-primary" onclick="nextStep('step4','step5','sum4',getSummaryPos)">Suivant →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ÉTAPE 5 — NB MEUBLES ── -->
+    <div class="step-card locked" id="step5">
+      <div class="step-head" onclick="toggleStep('step5')">
+        <div class="step-num"><span>5</span></div>
+        <div class="step-title-wrap">
+          <div class="step-title">Nombre de meubles présents</div>
+          <div class="step-summary" id="sum5"></div>
+        </div>
+        <div class="step-chevron">▼</div>
+      </div>
+      <div class="step-body">
+        <label class="field-label">
+          Meubles constatés
+          <button class="help-btn" onclick="toggleHelp('help5')">?</button>
+        </label>
+        <div class="help-bubble" id="help5">Comptez uniquement les meubles LP de cette opération. La valeur max correspond aux meubles livrés à ce magasin.</div>
+        <div class="stepper">
+          <button onclick="stepperDec('f-meubles')">−</button>
+          <input type="number" id="f-meubles" value="0" min="0" max="10">
+          <button onclick="stepperInc('f-meubles')">+</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;" id="meuble-max-hint"></div>
+        <div class="step-nav">
+          <button class="btn btn-secondary" onclick="prevStep('step5','step4')">← Retour</button>
+          <button class="btn btn-primary" onclick="nextStep('step5','step6','sum5',getSummaryMeubles)">Suivant →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ÉTAPE 6 — FLYERS ── -->
+    <div class="step-card locked" id="step6">
+      <div class="step-head" onclick="toggleStep('step6')">
+        <div class="step-num"><span>6</span></div>
+        <div class="step-title-wrap">
+          <div class="step-title">Présence des flyers</div>
+          <div class="step-summary" id="sum6"></div>
+        </div>
+        <div class="step-chevron">▼</div>
+      </div>
+      <div class="step-body">
+        <label class="field-label">Où sont les flyers ?</label>
+        <div class="choice-grid col1" id="flyer-grid">
+          <button class="choice-btn" onclick="selectChoice(this,'flyer-grid','f-flyers')">✅ Meuble ET caisse</button>
+          <button class="choice-btn" onclick="selectChoice(this,'flyer-grid','f-flyers')">📦 Juste sur le meuble</button>
+          <button class="choice-btn" onclick="selectChoice(this,'flyer-grid','f-flyers')">🏷️ Juste en caisse</button>
+          <button class="choice-btn" onclick="selectChoice(this,'flyer-grid','f-flyers')">❌ Aucun endroit</button>
+        </div>
+        <input type="hidden" id="f-flyers">
+        <div class="step-nav">
+          <button class="btn btn-secondary" onclick="prevStep('step6','step5')">← Retour</button>
+          <button class="btn btn-primary" onclick="nextStep('step6','step7','sum6',getSummaryFlyers)">Suivant →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ÉTAPE 7 — RUPTURES ── -->
+    <div class="step-card locked" id="step7">
+      <div class="step-head" onclick="toggleStep('step7')">
+        <div class="step-num"><span>7</span></div>
+        <div class="step-title-wrap">
+          <div class="step-title">Ruptures au sein du meuble</div>
+          <div class="step-summary" id="sum7"></div>
+        </div>
+        <div class="step-chevron">▼</div>
+      </div>
+      <div class="step-body">
+        <label class="field-label">Y a-t-il des ruptures ?</label>
+        <div class="choice-grid col3" id="rupt-grid">
+          <button class="choice-btn" onclick="selectRupture(this, true)">✅ OUI</button>
+          <button class="choice-btn" onclick="selectRupture(this, false)">❌ NON</button>
+        </div>
+
+        <div class="rupture-section" id="ruptureList">
+          <label class="field-label" style="margin-top:14px;">Quels produits ? <button class="help-btn" onclick="toggleHelp('help7')">?</button></label>
+          <div class="help-bubble" id="help7">Sélectionnez tous les produits en rupture (plus de stock visible).</div>
+          <div id="rupture-items">
+            <div class="rupture-item" onclick="toggleRupture(this)"><div class="rupture-check"></div><div><div style="font-size:13px;font-weight:500;">Cookeo Touch Wifi 6L</div><div class="rupture-ref">REF-7821-CKT</div></div></div>
+            <div class="rupture-item" onclick="toggleRupture(this)"><div class="rupture-check"></div><div><div style="font-size:13px;font-weight:500;">Multicuiseur OptiGrill Elite</div><div class="rupture-ref">REF-4415-OGE</div></div></div>
+            <div class="rupture-item" onclick="toggleRupture(this)"><div class="rupture-check"></div><div><div style="font-size:13px;font-weight:500;">Robot Pâtissier Masterchef 5+</div><div class="rupture-ref">REF-3302-MCP</div></div></div>
+            <div class="rupture-item" onclick="toggleRupture(this)"><div class="rupture-check"></div><div><div style="font-size:13px;font-weight:500;">Friteuse Actifry Genius XL</div><div class="rupture-ref">REF-9910-AFG</div></div></div>
+            <div class="rupture-item" onclick="toggleRupture(this)"><div class="rupture-check"></div><div><div style="font-size:13px;font-weight:500;">Blender Ultrablend Cook Pro</div><div class="rupture-ref">REF-2240-UBP</div></div></div>
+            <div class="rupture-item" onclick="toggleRupture(this)"><div class="rupture-check"></div><div><div style="font-size:13px;font-weight:500;">Grille-pain Toaster Principio</div><div class="rupture-ref">REF-6605-TPP</div></div></div>
+          </div>
+        </div>
+
+        <div class="step-nav">
+          <button class="btn btn-secondary" onclick="prevStep('step7','step6')">← Retour</button>
+          <button class="btn btn-primary" onclick="nextStep('step7','step8','sum7',getSummaryRuptures)">Suivant →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ÉTAPE 8 — PHOTOS ── -->
+    <div class="step-card locked" id="step8">
+      <div class="step-head" onclick="toggleStep('step8')">
+        <div class="step-num"><span>8</span></div>
+        <div class="step-title-wrap">
+          <div class="step-title">Photos</div>
+          <div class="step-summary" id="sum8"></div>
+        </div>
+        <div class="step-chevron">▼</div>
+      </div>
+      <div class="step-body">
+        <label class="field-label">Avant mon intervention</label>
+        <div class="photo-zone" id="zone-avant" onclick="document.getElementById('f-photo-avant').click()">
+          <div class="photo-zone-icon" id="icon-avant">📷</div>
+          <div class="photo-zone-text" id="text-avant">Appuyez pour prendre une photo ou choisir depuis la galerie</div>
+          <img class="photo-preview" id="prev-avant" alt="Photo avant">
+        </div>
+        <input type="file" id="f-photo-avant" accept="image/*" capture="environment" onchange="previewPhoto('f-photo-avant','zone-avant','prev-avant','icon-avant','text-avant')">
+
+        <label class="field-label" style="margin-top:16px;">Après mon intervention</label>
+        <div class="photo-zone" id="zone-apres" onclick="document.getElementById('f-photo-apres').click()">
+          <div class="photo-zone-icon" id="icon-apres">📷</div>
+          <div class="photo-zone-text" id="text-apres">Appuyez pour prendre une photo ou choisir depuis la galerie</div>
+          <img class="photo-preview" id="prev-apres" alt="Photo après">
+        </div>
+        <input type="file" id="f-photo-apres" accept="image/*" capture="environment" onchange="previewPhoto('f-photo-apres','zone-apres','prev-apres','icon-apres','text-apres')">
+
+        <div class="step-nav">
+          <button class="btn btn-secondary" onclick="prevStep('step8','step7')">← Retour</button>
+          <button class="btn btn-primary" onclick="nextStep('step8','step9','sum8',getSummaryPhotos)">Suivant →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ÉTAPE 9 — RECOMMANDATIONS ── -->
+    <div class="step-card locked" id="step9">
+      <div class="step-head" onclick="toggleStep('step9')">
+        <div class="step-num"><span>9</span></div>
+        <div class="step-title-wrap">
+          <div class="step-title">Recommandations</div>
+          <div class="step-summary" id="sum9"></div>
+        </div>
+        <div class="step-chevron">▼</div>
+      </div>
+      <div class="step-body">
+        <label class="field-label">Vos observations &amp; recommandations</label>
+        <textarea id="f-reco" placeholder="Ex : Meuble déplacé par le magasin — à repositionner à l'entrée. Signaler à l'équipe LP pour suivi.&#10;Bon accueil du chef de rayon, ouvert à l'échange..."></textarea>
+        <div class="step-nav">
+          <button class="btn btn-secondary" onclick="prevStep('step9','step8')">← Retour</button>
+          <button class="btn btn-danger" onclick="showSubmit()">Terminer &amp; Soumettre →</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /screen-form -->
+
+  <!-- SCREEN SUBMIT -->
+  <div id="screen-submit">
+    <div class="submit-card">
+      <div class="submit-icon">📋</div>
+      <div class="submit-title">Récapitulatif de visite</div>
+      <div class="submit-sub">Vérifiez les informations avant envoi. Un bilan sera automatiquement transmis à l'interlocuteur magasin.</div>
+      <div class="submit-summary" id="recap-table"></div>
+      <div class="submit-actions">
+        <button class="btn btn-secondary" onclick="backToForm()">← Modifier</button>
+        <button class="btn btn-primary" onclick="submitForm()">✉️ Envoyer le bilan</button>
+        <button class="btn btn-secondary" onclick="downloadPDF()">⬇️ Télécharger PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN SUCCESS -->
+  <div id="screen-success">
+    <div class="submit-card">
+      <div class="submit-icon">✅</div>
+      <div class="submit-title">Bilan envoyé !</div>
+      <div class="submit-sub" id="success-msg"></div>
+      <div class="submit-actions">
+        <button class="btn btn-primary" onclick="newVisit()">+ Nouvelle visite</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────
+const TOTAL_STEPS = 9;
+let currentStep = 1;
+let selectedMagData = {};
+
+// ── INIT ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('f-date').value = today;
+  checkOffline();
+  window.addEventListener('online',  () => document.getElementById('offlineBadge').classList.remove('visible'));
+  window.addEventListener('offline', () => document.getElementById('offlineBadge').classList.add('visible'));
+});
+
+function checkOffline() {
+  if (!navigator.onLine) document.getElementById('offlineBadge').classList.add('visible');
+}
+
+// ── PROGRESS ──────────────────────────────────────────
+function updateProgress(step) {
+  const pct = Math.round((step / TOTAL_STEPS) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent  = pct + '%';
+  document.getElementById('progressText').textContent = `Étape ${step} sur ${TOTAL_STEPS}`;
+}
+
+// ── STEP NAVIGATION ───────────────────────────────────
+function toggleStep(id) {
+  const card = document.getElementById(id);
+  if (card.classList.contains('locked')) return;
+  // collapse others
+  document.querySelectorAll('.step-card.active').forEach(c => {
+    if (c.id !== id) c.classList.remove('active');
+  });
+  card.classList.toggle('active');
+}
+
+function nextStep(fromId, toId, sumId, summaryFn) {
+  const val = summaryFn();
+  if (val === null) return; // validation failed
+  document.getElementById(sumId).textContent = val;
+  const from = document.getElementById(fromId);
+  const to   = document.getElementById(toId);
+  from.classList.remove('active');
+  from.classList.add('done');
+  to.classList.remove('locked');
+  to.classList.add('active');
+  currentStep = parseInt(toId.replace('step',''));
+  updateProgress(currentStep);
+  // scroll into view
+  setTimeout(() => to.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+}
+
+function prevStep(fromId, toId) {
+  const from = document.getElementById(fromId);
+  const to   = document.getElementById(toId);
+  from.classList.remove('active');
+  from.classList.add('locked');
+  to.classList.remove('done');
+  to.classList.add('active');
+  currentStep = parseInt(toId.replace('step',''));
+  updateProgress(currentStep);
+  setTimeout(() => to.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+}
+
+// ── SUMMARY FUNCTIONS ─────────────────────────────────
+function getSummaryDate() {
+  const v = document.getElementById('f-date').value;
+  if (!v) { showToast('Veuillez saisir une date'); return null; }
+  const d = new Date(v);
+  return d.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+}
+function getSummaryMag() {
+  const sel = document.getElementById('f-mag');
+  if (!sel.value) { showToast('Veuillez sélectionner un magasin'); return null; }
+  return sel.options[sel.selectedIndex].text;
+}
+function getSummaryContact() {
+  const p = document.getElementById('f-prenom').value.trim();
+  const n = document.getElementById('f-nom').value.trim();
+  if (!p || !n) { showToast('Veuillez renseigner le prénom et le nom'); return null; }
+  return `${p} ${n}`;
+}
+function getSummaryPos() {
+  const v = document.getElementById('f-pos').value;
+  if (!v) { showToast('Veuillez choisir une position'); return null; }
+  return v;
+}
+function getSummaryMeubles() {
+  const v = document.getElementById('f-meubles').value;
+  return `${v} meuble(s) constaté(s)`;
+}
+function getSummaryFlyers() {
+  const v = document.getElementById('f-flyers').value;
+  if (!v) { showToast('Veuillez choisir une option'); return null; }
+  return v;
+}
+function getSummaryRuptures() {
+  const checked = document.querySelectorAll('.rupture-item.checked');
+  const haRupt  = document.getElementById('f-meubles'); // reusing—actually check rupt-grid
+  const selected = document.querySelector('#rupt-grid .choice-btn.selected, #rupt-grid .choice-btn.selected-no');
+  if (!selected) { showToast('Veuillez répondre à la question rupture'); return null; }
+  if (selected.textContent.includes('OUI') && checked.length === 0) {
+    return `Oui — aucun produit coché (à confirmer)`;
+  }
+  if (selected.textContent.includes('OUI')) {
+    const names = [...checked].map(el => el.querySelector('div > div:first-child').textContent.trim());
+    return `Oui — ${names.join(', ')}`;
+  }
+  return 'Aucune rupture';
+}
+function getSummaryPhotos() {
+  const a = document.getElementById('f-photo-avant').files.length;
+  const b = document.getElementById('f-photo-apres').files.length;
+  if (a && b) return '2 photos jointes (avant + après)';
+  if (a) return '1 photo jointe (avant)';
+  if (b) return '1 photo jointe (après)';
+  return 'Aucune photo';
+}
+
+// ── MAGASIN CHANGE ─────────────────────────────────────
+function onMagasinChange() {
+  const sel = document.getElementById('f-mag');
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt.value) { document.getElementById('magInfo').classList.remove('visible'); return; }
+  const meubles = opt.dataset.meubles || '—';
+  const perf    = opt.dataset.perf    || '0';
+  const ca      = opt.dataset.ca      || '—';
+  document.getElementById('mag-meubles').textContent = meubles;
+  document.getElementById('mag-ca').textContent      = ca + ' €';
+  const perfEl = document.getElementById('mag-perf');
+  perfEl.textContent = perf + '%';
+  perfEl.className   = 'mag-kpi-val ' + (parseFloat(perf) >= 0 ? 'pos' : 'neg');
+  document.getElementById('magInfo').classList.add('visible');
+  document.getElementById('f-meubles').max = meubles;
+  document.getElementById('meuble-max-hint').textContent = `Max : ${meubles} meuble(s) livré(s) dans ce magasin`;
+  selectedMagData = { meubles, perf, ca, name: opt.text };
+}
+
+// ── CHOICE BUTTONS ─────────────────────────────────────
+function selectChoice(btn, gridId, hiddenId) {
+  document.querySelectorAll(`#${gridId} .choice-btn`).forEach(b => b.classList.remove('selected','selected-no'));
+  btn.classList.add('selected');
+  document.getElementById(hiddenId).value = btn.textContent.trim().replace(/^[^\w]+/, '').trim();
+}
+
+function selectRupture(btn, isYes) {
+  document.querySelectorAll('#rupt-grid .choice-btn').forEach(b => b.classList.remove('selected','selected-no'));
+  btn.classList.add(isYes ? 'selected' : 'selected-no');
+  document.getElementById('ruptureList').classList.toggle('visible', isYes);
+}
+
+function toggleRupture(item) {
+  item.classList.toggle('checked');
+  const check = item.querySelector('.rupture-check');
+  check.textContent = item.classList.contains('checked') ? '✓' : '';
+}
+
+// ── STEPPER ────────────────────────────────────────────
+function stepperInc(id) {
+  const el = document.getElementById(id);
+  const max = parseInt(el.max) || 99;
+  if (parseInt(el.value) < max) el.value = parseInt(el.value) + 1;
+}
+function stepperDec(id) {
+  const el = document.getElementById(id);
+  if (parseInt(el.value) > 0) el.value = parseInt(el.value) - 1;
+}
+
+// ── HELP TOGGLE ────────────────────────────────────────
+function toggleHelp(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('visible');
+}
+
+// ── PHOTO PREVIEW ──────────────────────────────────────
+function previewPhoto(inputId, zoneId, previewId, iconId, textId) {
+  const file = document.getElementById(inputId).files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img  = document.getElementById(previewId);
+    const zone = document.getElementById(zoneId);
+    img.src    = e.target.result;
+    img.classList.add('visible');
+    zone.classList.add('has-photo');
+    document.getElementById(iconId).textContent = '✅';
+    document.getElementById(textId).textContent = file.name;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── SUBMIT SCREEN ──────────────────────────────────────
+function showSubmit() {
+  // finalize last step
+  const reco = document.getElementById('f-reco').value.trim();
+  document.getElementById('sum9').textContent = reco ? reco.substring(0,50) + '…' : 'Aucun commentaire';
+  document.getElementById('step9').classList.remove('active');
+  document.getElementById('step9').classList.add('done');
+
+  // build recap
+  const sel = document.getElementById('f-mag');
+  const rows = [
+    ['Date',        document.getElementById('sum1').textContent],
+    ['Magasin',     document.getElementById('sum2').textContent],
+    ['Interlocuteur', document.getElementById('sum3').textContent],
+    ['Position LP', document.getElementById('sum4').textContent],
+    ['Meubles',     document.getElementById('sum5').textContent],
+    ['Flyers',      document.getElementById('sum6').textContent],
+    ['Ruptures',    document.getElementById('sum7').textContent],
+    ['Photos',      document.getElementById('sum8').textContent],
+    ['Recommandations', reco || '—'],
+  ];
+  const table = document.getElementById('recap-table');
+  table.innerHTML = rows.map(([k,v]) =>
+    `<div class="submit-summary-row"><span>${k}</span><span>${v}</span></div>`
+  ).join('');
+
+  document.getElementById('screen-form').classList.add('hidden');
+  document.getElementById('screen-submit').classList.add('visible');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function backToForm() {
+  document.getElementById('screen-form').classList.remove('hidden');
+  document.getElementById('screen-submit').classList.remove('visible');
+  document.getElementById('step9').classList.remove('done');
+  document.getElementById('step9').classList.add('active');
+}
+
+function submitForm() {
+  const email = document.getElementById('f-email').value;
+  document.getElementById('screen-submit').classList.remove('visible');
+  document.getElementById('screen-success').classList.add('visible');
+  document.getElementById('success-msg').innerHTML =
+    `Bilan de visite envoyé à <strong>${email}</strong>.<br>Les données ont été synchronisées avec le siège.`;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function downloadPDF() {
+  showToast('Génération du PDF en cours… (fonctionnalité à connecter)');
+}
+
+function newVisit() {
+  location.reload();
+}
+
+// ── TOAST ──────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('visible');
+  setTimeout(() => t.classList.remove('visible'), 3000);
+}
+</script>
+</body>
+</html>
